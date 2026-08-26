@@ -1,0 +1,45 @@
+zerops:
+  - setup: gitea
+    build:
+      base: ubuntu@26.04
+      deployFiles:
+        - app.ini
+        - init.sh
+        - start.sh
+    run:
+      base: ubuntu@26.04
+      ports:
+        - port: 3000
+          httpSupport: true
+        - port: 2222
+      envVariables:
+        GITEA_VERSION: 1.27.2
+        GITEA_WORK_DIR: /mnt/volume/gitea
+        GITEA_DOMAIN: gitea-${zeropsSubdomainHost}-3000.app-futon.zerops.dev
+        GITEA_ROOT_URL: https://gitea-${zeropsSubdomainHost}-3000.app-futon.zerops.dev/
+        DB_HOST: db
+        DB_PORT: 5432
+        DB_NAME: giteadb
+        DB_USER: gitea
+        # Superuser of the db service - only used by init-db.sh to create the gitea role and database.
+        DB_ADMIN_USER: ${db_superUser}
+        DB_ADMIN_PASSWORD: ${db_superUserPassword}
+        DB_ADMIN_DB: ${db_dbName}
+      volume:
+        hostname: volume
+      prepareCommands:
+        - sudo apt-get update
+        - sudo apt-get install -y --no-install-recommends git ca-certificates gettext-base wget gpg postgresql-client
+        - wget -q -O /tmp/gitea https://dl.gitea.com/gitea/${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64
+        - wget -q -O /tmp/gitea.asc https://dl.gitea.com/gitea/${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64.asc
+        - gpg --keyserver hkps://keys.openpgp.org --recv 7C9E68152594688862D62AF62D9AE806EC1592E2
+        - gpg --verify /tmp/gitea.asc /tmp/gitea
+        - sudo install -m 755 /tmp/gitea /usr/local/bin/gitea
+        - sudo groupadd --system git
+        - sudo useradd --system --gid git --shell /bin/bash --home-dir /home/git --create-home git
+        - sudo mkdir -p /etc/gitea
+        - sudo chown root:git /etc/gitea
+        - sudo chmod 770 /etc/gitea
+      initCommands:
+        - zsc execOnce prepare-gitea -- /var/www/init.sh
+      start: ./start.sh

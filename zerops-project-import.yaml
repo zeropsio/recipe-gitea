@@ -1,0 +1,17 @@
+#zeropsPreprocessor=on
+project:
+  name: gitea
+services:
+  - hostname: db
+    type: postgresql:ha@18
+    priority: 10
+  - hostname: volume
+    type: local-storage@1
+    priority: 10
+  - hostname: gitea
+    type: ubuntu@26.04
+    envSecrets:
+      DB_PASSWORD: <@generateRandomString(<32>)>
+    maxContainers: 1
+    verticalAutoscaling:
+      minFreeRamGB: 0.25
