@@ -4,6 +4,7 @@ project:
 services:
   - hostname: db
     type: postgresql:ha@18
+    profile: oltp-staging
     priority: 10
   - hostname: volume
     type: local-storage@1
