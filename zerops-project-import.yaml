@@ -6,13 +6,20 @@ services:
     type: postgresql:ha@18
     profile: oltp-staging
     priority: 10
+
   - hostname: volume
     type: local-storage@1
     priority: 10
-  - hostname: gitea
+
+  - hostname: web
     type: ubuntu@26.04
-    envSecrets:
-      DB_PASSWORD: <@generateRandomString(<32>)>
+    vault:
+      DB_PASSWORD:
+        value: <@generateRandomString(<32>)>
+        sensitive: true
+      GITEA_DOMAIN: web-${zeropsSubdomainHost}-3000.app-prg1.zerops.app
     maxContainers: 1
     verticalAutoscaling:
-      minFreeRamGB: 0.25
+      minRam: 0.25
+    buildFromGit: https://github.com/zeropsio/recipe-gitea
+    enableSubdomainAccess: true

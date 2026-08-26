@@ -1,5 +1,5 @@
 zerops:
-  - setup: gitea
+  - setup: web
     build:
       base: ubuntu@26.04
       deployFiles:
@@ -15,8 +15,6 @@ zerops:
       envVariables:
         GITEA_VERSION: 1.27.2
         GITEA_WORK_DIR: /mnt/volume/gitea
-        GITEA_DOMAIN: gitea-${zeropsSubdomainHost}-3000.app-futon.zerops.dev
-        GITEA_ROOT_URL: https://gitea-${zeropsSubdomainHost}-3000.app-futon.zerops.dev/
         DB_HOST: db
         DB_PORT: 5432
         DB_NAME: giteadb
@@ -35,10 +33,10 @@ zerops:
         - gpg --keyserver hkps://keys.openpgp.org --recv 7C9E68152594688862D62AF62D9AE806EC1592E2
         - gpg --verify /tmp/gitea.asc /tmp/gitea
         - sudo install -m 755 /tmp/gitea /usr/local/bin/gitea
-        - sudo groupadd --system git
-        - sudo useradd --system --gid git --shell /bin/bash --home-dir /home/git --create-home git
+        # - sudo groupadd --system git
+        # - sudo useradd --system --gid git --shell /bin/bash --home-dir /home/git --create-home git
         - sudo mkdir -p /etc/gitea
-        - sudo chown root:git /etc/gitea
+        - sudo chown root:zerops /etc/gitea
         - sudo chmod 770 /etc/gitea
       initCommands:
         - zsc execOnce prepare-gitea -- /var/www/init.sh

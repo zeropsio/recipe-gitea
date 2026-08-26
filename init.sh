@@ -35,7 +35,7 @@ SQL
 
 echo "init.sh: preparing work dir $GITEA_WORK_DIR ..."
 sudo mkdir -p "$GITEA_WORK_DIR"/{custom,data,indexers,public,log}
-sudo chown -R git:git "$GITEA_WORK_DIR"
+sudo chown -R zerops:zerops "$GITEA_WORK_DIR"
 sudo chmod -R 750 "$GITEA_WORK_DIR"
 
 for secret in JWT_SECRET LFS_JWT_SECRET SECRET_KEY INTERNAL_TOKEN; do

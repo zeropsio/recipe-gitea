@@ -11,7 +11,7 @@ done
 
 echo "start.sh: rendering /etc/gitea/app.ini ..."
 zsc envReplace --silent app.ini /tmp/app.ini
-sudo install -m 660 -o root -g git /tmp/app.ini /etc/gitea/app.ini
+sudo install -m 660 -o root -g zerops /tmp/app.ini /etc/gitea/app.ini
 
 echo "start.sh: starting gitea ..."
-exec sudo -u git /usr/local/bin/gitea web --config /etc/gitea/app.ini
+gitea web --config /etc/gitea/app.ini
