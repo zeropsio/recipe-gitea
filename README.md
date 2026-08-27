@@ -44,7 +44,7 @@ services:
 This creates and wires up everything on Zerops:
 
 - `db` – HA PostgreSQL
-- `volume` – shared local storage for repositories, LFS objects and logs
+- `volume` – [local storage](https://docs.zerops.io/local-storage/overview) for repositories, LFS objects and logs
 - `web` – Gitea itself, built from this repository, with subdomain access
   enabled
 
