@@ -109,7 +109,92 @@ For real use, give the instance a domain and expose Gitea's SSH server:
    ssh://git@git.example.com:2222/you/repo.git
    ```
 
-## 5. Take ownership, customize, extend
+## 5. Optional addon: CI runners (Gitea Actions)
+
+Gitea Actions is enabled by default; what's missing are runners to execute the
+jobs. This addon imports a `runner` service into the existing project — each of
+its containers registers itself as a separate runner and picks up jobs
+directly on the container (**host mode**, no Docker involved), using the
+[`gitea-runner` binary](https://docs.gitea.com/runner/installation/binary/).
+
+First get a registration token, either in the Gitea UI under **Site
+administration → Actions → Runners → Create new Runner**, or from inside the
+`web` service:
+
+```sh
+ssh web   # or the Remote Web Terminal in the GUI
+gitea actions generate-runner-token --config /etc/gitea/app.ini
+```
+
+Then put the token into `zerops-runner-import.yaml` in place of
+`<generated-token>` and import it into the project (**Import services** in
+the GUI, or zcli):
+
+```sh
+zcli project service-import zerops-runner-import.yaml
+```
+
+```yaml
+services:
+  - hostname: runner
+    type: ubuntu@26.04
+    vault:
+      RUNNER_REGISTRATION_TOKEN:
+        value: <generated-token>
+        sensitive: true
+    minContainers: 3
+    verticalAutoscaling:
+      minRam: 0.5
+    buildFromGit: https://github.com/zeropsio/recipe-gitea
+    zeropsSetup: runner
+```
+
+Each container registers itself on its first start — one runner per
+container, named after the container's hostname — and shows up as idle under
+**Site administration → Actions → Runners**. (Without a valid token the
+containers just keep restarting until one lands in
+`RUNNER_REGISTRATION_TOKEN`, so a forgotten or rotated token is fixed by
+setting the variable, no re-import needed.)
+
+Try it out: in any repo, enable Actions (**Settings → Units**, on by default
+for new repos) and push a workflow:
+
+```yaml
+# .gitea/workflows/demo.yaml
+name: demo
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "hello from $(hostname)"
+```
+
+**Scaling** is just the service's horizontal scaling: the import starts with 3
+containers to make the pattern visible, and changing the range in the GUI
+adds or removes runners — every new container registers itself with the same
+token.
+
+**Good to know:**
+
+- Containers are volatile. Every redeploy of the service, scale-down or
+  container recreation leaves the old registrations behind as *offline*
+  runners in **Site administration → Actions → Runners**. That's harmless —
+  jobs are only sent to online runners — just delete the stale entries there
+  (or via `DELETE /api/v1/admin/actions/runners/{id}`) whenever they bother
+  you. Scaling down doesn't drain: a container removed mid-job fails that
+  job.
+- Host mode runs job steps directly on the runner container as the `zerops`
+  user. `docker://` actions, `container:` jobs and `services:` blocks won't
+  work — stick to plain `run:` steps and JS actions (`actions/checkout` works;
+  that's why the recipe installs `nodejs` and `git`). Add whatever else your
+  jobs need to the `prepareCommands` of the `runner` setup in `zerops.yaml`.
+- Anyone who can push a workflow to the instance runs code on the runner
+  containers, including access to their environment variables. Treat the
+  runners as shared by everyone you give push access to.
+
+## 6. Take ownership, customize, extend
 
 The `web` service is built from this repository, so to make changes fork or
 clone it, edit what you need and deploy it as your own:
@@ -120,6 +205,8 @@ clone it, edit what you need and deploy it as your own:
   environment variables.
 - `init.sh` / `start.sh` – one-time init (database, work dir, secrets) and
   the start command.
+- `runner-init.sh` / `zerops-runner-import.yaml` – the CI runners addon:
+  per-container registration, and the service import.
 
 Deploy your version with `zcli push web` from the clone, or point the service
 at your own git repository (**Build & deploy → connect repository**) for

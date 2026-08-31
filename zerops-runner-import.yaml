@@ -1,0 +1,11 @@
+services:
+  - hostname: runner
+    type: ubuntu@26.04
+    vault:
+      RUNNER_REGISTRATION_TOKEN:
+        value: <generated-token>
+        sensitive: true
+    minContainers: 3
+    verticalAutoscaling:
+      minRam: 0.5
+    buildFromGit: https://github.com/zeropsio/recipe-gitea

@@ -39,5 +39,29 @@ zerops:
         - sudo chown root:zerops /etc/gitea
         - sudo chmod 770 /etc/gitea
       initCommands:
-        - zsc execOnce prepare-gitea -- /var/www/init.sh
+        - zsc execOnce prepare-gitea -- ./init.sh
       start: ./start.sh
+
+  - setup: runner
+    build:
+      base: ubuntu@26.04
+      deployFiles:
+        - runner-init.sh
+    run:
+      base: ubuntu@26.04
+      envVariables:
+        GITEA_RUNNER_VERSION: 3.3.1
+        GITEA_INSTANCE_URL: http://web:3000
+        RUNNER_LABELS: ubuntu-latest:host,ubuntu-26.04:host
+      prepareCommands:
+        - sudo apt-get update
+        # Host-mode jobs run directly on the container, so ship what workflows commonly need - git for
+        # checkouts and nodejs for JS actions (actions/checkout etc.). Add your own tools here.
+        - sudo apt-get install -y --no-install-recommends git ca-certificates nodejs wget
+        - wget -q -P /tmp https://dl.gitea.com/gitea-runner/${GITEA_RUNNER_VERSION}/gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64
+        - wget -q -P /tmp https://dl.gitea.com/gitea-runner/${GITEA_RUNNER_VERSION}/gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64.sha256
+        - cd /tmp && sha256sum -c gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64.sha256
+        - sudo install -m 755 /tmp/gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64 /usr/local/bin/gitea-runner
+      initCommands:
+        - ./runner-init.sh
+      start: gitea-runner daemon
