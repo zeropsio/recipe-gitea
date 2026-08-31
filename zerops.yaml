@@ -62,6 +62,9 @@ zerops:
         - wget -q -P /tmp https://dl.gitea.com/gitea-runner/${GITEA_RUNNER_VERSION}/gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64.sha256
         - cd /tmp && sha256sum -c gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64.sha256
         - sudo install -m 755 /tmp/gitea-runner-${GITEA_RUNNER_VERSION}-linux-amd64 /usr/local/bin/gitea-runner
+        # zcli, so workflows can deploy to Zerops (see README).
+        - wget -q -O /tmp/zcli https://github.com/zeropsio/zcli/releases/latest/download/zcli-linux-amd64
+        - sudo install -m 755 /tmp/zcli /usr/local/bin/zcli
       initCommands:
         - ./runner-init.sh
       start: gitea-runner daemon

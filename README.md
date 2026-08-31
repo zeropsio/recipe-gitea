@@ -106,7 +106,7 @@ For real use, give the instance a domain and expose Gitea's SSH server:
 
    ```
    https://git.example.com/you/repo.git
-   ssh://git@git.example.com:2222/you/repo.git
+   ssh://zerops@git.example.com:2222/you/repo.git
    ```
 
 ## 5. Optional addon: CI runners (Gitea Actions)
@@ -175,6 +175,31 @@ jobs:
 containers to make the pattern visible, and changing the range in the GUI
 adds or removes runners — every new container registers itself with the same
 token.
+
+**Deploying to Zerops from workflows:** the runner image ships
+[zcli](https://github.com/zeropsio/zcli), so Gitea Actions can drive your
+Zerops deployments. Create a Zerops integration token scoped to just the target
+project (in the GUI under "Access Token Management") and store it
+as the repo's `ZEROPS_TOKEN` secret (**Settings → Actions → Secrets**) - zcli
+picks that env variable up directly, no `zcli login` needed and nothing is
+persisted on the shared runner:
+
+```yaml
+# .gitea/workflows/deploy.yaml
+name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: zcli push <service> --project-id <project-id> --version-name "${GITHUB_SHA::7}"
+```
 
 **Good to know:**
 
