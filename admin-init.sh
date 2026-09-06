@@ -12,12 +12,15 @@
 # localhost, and nothing in this file runs with the server up. Ask the API for one
 # instead, with the token below: POST /api/v1/admin/actions/runners/registration-token.
 #
-# Runs from the start command rather than initCommands, because init commands run
-# once per deploy while the start command is re-run on every boot: the variables this
-# needs are written by init.sh seconds earlier and only reach a process started after
-# them. It does nothing on all but one boot — it returns early once GITEA_ADMIN_TOKEN
-# is set, and re-mints if the user exists but the variable does not (an interrupted
-# first run, or a deliberate rotation: delete the variable and restart the service).
+# Runs from the start command, not from initCommands. Init commands do run on every
+# container start, but when the start command exits non-zero the platform re-runs the
+# start command alone — and that is exactly what happens here on the first boot, where
+# start.sh exits until the secrets init.sh just wrote have propagated. From initCommands
+# this would get one look at an empty environment and never be reached again.
+#
+# It does nothing on all but one boot: it returns early once GITEA_ADMIN_TOKEN is set,
+# and re-mints if the user exists but the variable does not (an interrupted first run,
+# or a deliberate rotation: delete the variable and restart the service).
 
 set -euo pipefail
 
@@ -58,6 +61,12 @@ if gitea admin user list --config "$CONF" 2>/dev/null | awk 'NR>1{print $2}' | g
     --password "$password" --must-change-password=false
   token="$(gitea admin user generate-access-token --config "$CONF" --username "$USERNAME" \
     --token-name "automation-$(date +%s)" --scopes all --raw)"
+  # The CLI cannot delete a token, and a token's value is never readable again, so the
+  # one this replaces stays valid until someone removes it. Fine when you are recovering
+  # a lost variable, NOT fine when you are rotating because it leaked — revoke the old
+  # entries under Settings -> Applications, or with
+  # DELETE /api/v1/users/<user>/tokens/<name> (basic auth) once the server is up.
+  echo "admin-init.sh: NOTE the previous access token is still valid — revoke it if you are rotating after a leak"
 else
   # --random-password and --access-token both print their value, which is why neither
   # is passed as an argument: the output is captured here and never echoed.

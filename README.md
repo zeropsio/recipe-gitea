@@ -73,8 +73,11 @@ Read them in the GUI under the `web` service's **Environment variables**, or
 with `zcli`. Nothing is printed to the log and nothing is passed on argv, so the
 values exist only in the environment.
 
-To rotate any of them, delete `GITEA_ADMIN_TOKEN` and restart the service: the
-script mints a fresh password and token and republishes all three.
+To rotate them, delete `GITEA_ADMIN_TOKEN` and restart the service: a fresh
+password and token are minted and republished. The token being replaced stays
+valid until you remove it — Gitea's CLI cannot delete one — so if you are
+rotating because a token leaked, revoke the old entries under **Settings →
+Applications** as well.
 
 To use a different name, set `GITEA_ADMIN_USERNAME` in `zerops.yaml` before the
 first start.
