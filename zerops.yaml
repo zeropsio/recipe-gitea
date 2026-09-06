@@ -44,8 +44,12 @@ zerops:
         - sudo chmod 770 /etc/gitea
       initCommands:
         - zsc execOnce prepare-gitea -- ./init.sh
-        - ./admin-init.sh
-      start: ./start.sh
+      # admin-init.sh hangs off the start command, not initCommands: init commands run
+      # once per deploy, while the start command is re-run on every boot with the
+      # environment as it stands then — which is the whole point, since the variables
+      # it needs are written by init.sh moments earlier and land a boot later. It must
+      # never keep Gitea down, hence the `|| true`.
+      start: bash -c './admin-init.sh || true; exec ./start.sh'
 
   - setup: runner
     build:

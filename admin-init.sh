@@ -7,10 +7,12 @@
 # way init.sh publishes the secrets Gitea generates for itself. Nothing is printed
 # and nothing is passed on argv, so no credential reaches a log or the process list.
 #
-# Runs on every boot and does nothing on all but one of them: it returns early once
-# GITEA_ADMIN_TOKEN is set, and re-mints if the user exists but the variable does
-# not (an interrupted first run, or a deliberate rotation — delete the variable and
-# restart the service).
+# Runs from the start command rather than initCommands, because init commands run
+# once per deploy while the start command is re-run on every boot: the variables this
+# needs are written by init.sh seconds earlier and only reach a process started after
+# them. It does nothing on all but one boot — it returns early once GITEA_ADMIN_TOKEN
+# is set, and re-mints if the user exists but the variable does not (an interrupted
+# first run, or a deliberate rotation: delete the variable and restart the service).
 
 set -euo pipefail
 
@@ -24,8 +26,9 @@ if [ -n "${GITEA_ADMIN_TOKEN:-}" ]; then
   exit 0
 fi
 
-# The very first boot has none of these yet — init.sh has only just written them and
-# start.sh is about to exit and be restarted with them present. Nothing to do until then.
+# The very first boot has none of these yet: init.sh has only just written them, and a
+# variable written now reaches processes started later, not this one. start.sh is about
+# to exit for the same reason and the boot after this one has everything.
 for secret in JWT_SECRET LFS_JWT_SECRET SECRET_KEY INTERNAL_TOKEN; do
   if [ -z "${!secret:-}" ]; then
     echo "admin-init.sh: $secret not set yet, nothing to do on this boot"
