@@ -122,7 +122,7 @@ call:
 
 ```sh
 curl -X POST -H "Authorization: token $GITEA_ADMIN_TOKEN" \
-  https://<your-gitea>/api/v1/admin/runners/registration-token
+  https://<your-gitea>/api/v1/admin/actions/runners/registration-token
 ```
 
 The Gitea UI has the same thing under **Site administration → Actions → Runners

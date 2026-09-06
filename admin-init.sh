@@ -10,7 +10,7 @@
 # Runner registration tokens are deliberately not minted here: `gitea actions
 # generate-runner-token` is not a database command, it calls the running server over
 # localhost, and nothing in this file runs with the server up. Ask the API for one
-# instead, with the token below: POST /api/v1/admin/runners/registration-token.
+# instead, with the token below: POST /api/v1/admin/actions/runners/registration-token.
 #
 # Runs from the start command rather than initCommands, because init commands run
 # once per deploy while the start command is re-run on every boot: the variables this
