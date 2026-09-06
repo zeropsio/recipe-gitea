@@ -56,28 +56,29 @@ the volume. The very first start of `web` fails on purpose (`start.sh` exits
 until the secrets land in the environment) and Zerops restarts it with them
 present – there is nothing to prepare by hand.
 
-## 2. Create the admin user
+## 2. Collect the admin credentials
 
-Registration is disabled, so create the first (admin) user from inside the
-`web` service. Open a webshell in the GUI (`web` → **Remote Web Terminal**), or SSH in
-over the Zerops VPN:
+There is no step here — `admin-init.sh` has already run. Registration is
+disabled and Gitea has no bootstrap endpoint, so the recipe creates the first
+user the only way there is, from inside the service, and then publishes what it
+made the same way it publishes Gitea's own secrets:
 
-```sh
-zcli vpn up
-ssh web
-```
+| Variable                | What it is                                             |
+| ----------------------- | ------------------------------------------------------ |
+| `GITEA_ADMIN_USERNAME`  | the admin's name, `mate` unless you changed it          |
+| `GITEA_ADMIN_PASSWORD`  | its password, generated                                |
+| `GITEA_ADMIN_TOKEN`     | an API token scoped `all`, for automation              |
+| `GITEA_RUNNER_TOKEN`    | a runner registration token, for step 5                |
 
-Then run:
+Read them in the GUI under the `web` service's **Environment variables**, or
+with `zcli`. Nothing is printed to the log and nothing is passed on argv, so the
+values exist only in the environment.
 
-```sh
-gitea admin user create \
-  --config /etc/gitea/app.ini \
-  --admin \
-  --username admin \
-  --email you@example.com \
-  --password 'choose-a-strong-one' \
-  --must-change-password=false
-```
+To rotate any of them, delete `GITEA_ADMIN_TOKEN` and restart the service: the
+script mints a fresh password and token and republishes all three.
+
+To use a different name, set `GITEA_ADMIN_USERNAME` in `zerops.yaml` before the
+first start.
 
 ## 3. Explore the instance
 
@@ -117,18 +118,13 @@ its containers registers itself as a separate runner and picks up jobs
 directly on the container (**host mode**, no Docker involved), using the
 [`gitea-runner` binary](https://docs.gitea.com/runner/installation/binary/).
 
-First get a registration token, either in the Gitea UI under **Site
-administration → Actions → Runners → Create new Runner**, or from inside the
-`web` service:
+The registration token is already waiting for you as the `web` service's
+`GITEA_RUNNER_TOKEN` (step 2). If you would rather mint another one, the Gitea
+UI has **Site administration → Actions → Runners → Create new Runner**, and the
+`web` service has `gitea actions generate-runner-token --config /etc/gitea/app.ini`.
 
-```sh
-ssh web   # or the Remote Web Terminal in the GUI
-gitea actions generate-runner-token --config /etc/gitea/app.ini
-```
-
-Then put the token into `zerops-runner-import.yaml` in place of
-`<generated-token>` and import it into the project (**Import services** in
-the GUI, or zcli):
+Put the token into `zerops-runner-import.yaml` in place of `<generated-token>`
+and import it into the project (**Import services** in the GUI, or zcli):
 
 ```sh
 zcli project service-import zerops-runner-import.yaml
@@ -230,6 +226,8 @@ clone it, edit what you need and deploy it as your own:
   environment variables.
 - `init.sh` / `start.sh` – one-time init (database, work dir, secrets) and
   the start command.
+- `admin-init.sh` – the first admin user, its API token and a runner
+  registration token, published as environment variables.
 - `runner-init.sh` / `zerops-runner-import.yaml` – the CI runners addon:
   per-container registration, and the service import.
 

@@ -4,6 +4,7 @@ zerops:
       base: ubuntu@26.04
       deployFiles:
         - app.ini
+        - admin-init.sh
         - init.sh
         - start.sh
     run:
@@ -23,6 +24,9 @@ zerops:
         DB_ADMIN_USER: ${db_superUser}
         DB_ADMIN_PASSWORD: ${db_superUserPassword}
         DB_ADMIN_DB: ${db_dbName}
+        # Who admin-init.sh creates. Change before the first start to use another name;
+        # afterwards, rename the user in Gitea itself.
+        GITEA_ADMIN_USERNAME: mate
       volume:
         hostname: volume
       prepareCommands:
@@ -40,6 +44,7 @@ zerops:
         - sudo chmod 770 /etc/gitea
       initCommands:
         - zsc execOnce prepare-gitea -- ./init.sh
+        - ./admin-init.sh
       start: ./start.sh
 
   - setup: runner
