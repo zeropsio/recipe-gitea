@@ -73,6 +73,11 @@ Read them in the GUI under the `web` service's **Environment variables**, or
 with `zcli`. Nothing is printed to the log and nothing is passed on argv, so the
 values exist only in the environment.
 
+Reading them over the API needs an **integration token**, not a user session: a
+user access token answers `REDACTED` for anything marked sensitive. One scoped to
+this project alone is enough — `roleCode: NO_ACCESS` at the organization with
+`projects: [{projectId, roleCode: "ADMIN"}]`.
+
 To rotate them, delete `GITEA_ADMIN_TOKEN` and restart the service: a fresh
 password and token are minted and republished. The token being replaced stays
 valid until you remove it — Gitea's CLI cannot delete one — so if you are
@@ -230,7 +235,10 @@ The `web` service is built from this repository, so to make changes fork or
 clone it, edit what you need and deploy it as your own:
 
 - `app.ini` – Gitea configuration; values in `{{.VAR}}` are filled from the
-  service's environment variables at start (`zsc envReplace`).
+  service's environment variables at start (`zsc envReplace`). The API answers
+  cross-origin requests (`[cors]`), which is what lets a browser-based client
+  read this instance; no credentials are allowed with them, so a Gitea session
+  cookie is never usable from another origin.
 - `zerops.yaml` – build/run recipe: Gitea version, installed packages, ports,
   environment variables.
 - `init.sh` / `start.sh` – one-time init (database, work dir, secrets) and
