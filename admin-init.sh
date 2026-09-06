@@ -2,10 +2,15 @@
 
 # https://docs.gitea.com/administration/command-line#admin
 
-# Mints the first admin user, an API token for automation and a runner registration
-# token, then publishes them as this service's own environment variables — the same
-# way init.sh publishes the secrets Gitea generates for itself. Nothing is printed
-# and nothing is passed on argv, so no credential reaches a log or the process list.
+# Mints the first admin user and an API token for automation, then publishes them as
+# this service's own environment variables — the same way init.sh publishes the secrets
+# Gitea generates for itself. Nothing is printed and nothing is passed on argv, so no
+# credential reaches a log or the process list.
+#
+# Runner registration tokens are deliberately not minted here: `gitea actions
+# generate-runner-token` is not a database command, it calls the running server over
+# localhost, and nothing in this file runs with the server up. Ask the API for one
+# instead, with the token below: POST /api/v1/admin/runners/registration-token.
 #
 # Runs from the start command rather than initCommands, because init commands run
 # once per deploy while the start command is re-run on every boot: the variables this
@@ -70,13 +75,14 @@ if [ -z "${password:-}" ] || [ -z "${token:-}" ]; then
   exit 1
 fi
 
-runner_token="$(gitea actions generate-runner-token --config "$CONF" | tr -d '[:space:]')"
-
+# Published before anything else can fail. The user and the token exist in the database
+# by now, and a token's value is readable only at creation — losing it here would mean a
+# Gitea nobody holds the credentials for.
+#
 # Values go in on stdin, like init.sh does: a generated value can begin with a dash,
 # which zsc would otherwise parse as a flag.
 echo "admin-init.sh: publishing the credentials as environment variables ..."
-printf '%s' "$password"     | zsc setEnv --sensitive GITEA_ADMIN_PASSWORD -
-printf '%s' "$token"        | zsc setEnv --sensitive GITEA_ADMIN_TOKEN -
-printf '%s' "$runner_token" | zsc setEnv --sensitive GITEA_RUNNER_TOKEN -
+printf '%s' "$password" | zsc setEnv --sensitive GITEA_ADMIN_PASSWORD -
+printf '%s' "$token"    | zsc setEnv --sensitive GITEA_ADMIN_TOKEN -
 
 echo "admin-init.sh: done"

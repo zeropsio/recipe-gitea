@@ -68,7 +68,6 @@ made the same way it publishes Gitea's own secrets:
 | `GITEA_ADMIN_USERNAME`  | the admin's name, `mate` unless you changed it          |
 | `GITEA_ADMIN_PASSWORD`  | its password, generated                                |
 | `GITEA_ADMIN_TOKEN`     | an API token scoped `all`, for automation              |
-| `GITEA_RUNNER_TOKEN`    | a runner registration token, for step 5                |
 
 Read them in the GUI under the `web` service's **Environment variables**, or
 with `zcli`. Nothing is printed to the log and nothing is passed on argv, so the
@@ -118,10 +117,17 @@ its containers registers itself as a separate runner and picks up jobs
 directly on the container (**host mode**, no Docker involved), using the
 [`gitea-runner` binary](https://docs.gitea.com/runner/installation/binary/).
 
-The registration token is already waiting for you as the `web` service's
-`GITEA_RUNNER_TOKEN` (step 2). If you would rather mint another one, the Gitea
-UI has **Site administration → Actions → Runners → Create new Runner**, and the
-`web` service has `gitea actions generate-runner-token --config /etc/gitea/app.ini`.
+First get a registration token. With the admin token from step 2 that is one
+call:
+
+```sh
+curl -X POST -H "Authorization: token $GITEA_ADMIN_TOKEN" \
+  https://<your-gitea>/api/v1/admin/runners/registration-token
+```
+
+The Gitea UI has the same thing under **Site administration → Actions → Runners
+→ Create new Runner**, and inside the `web` service `gitea actions
+generate-runner-token --config /etc/gitea/app.ini` works once the server is up.
 
 Put the token into `zerops-runner-import.yaml` in place of `<generated-token>`
 and import it into the project (**Import services** in the GUI, or zcli):
@@ -226,8 +232,8 @@ clone it, edit what you need and deploy it as your own:
   environment variables.
 - `init.sh` / `start.sh` – one-time init (database, work dir, secrets) and
   the start command.
-- `admin-init.sh` – the first admin user, its API token and a runner
-  registration token, published as environment variables.
+- `admin-init.sh` – the first admin user and its API token, published as
+  environment variables.
 - `runner-init.sh` / `zerops-runner-import.yaml` – the CI runners addon:
   per-container registration, and the service import.
 
