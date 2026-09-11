@@ -17,7 +17,7 @@ services:
       DB_PASSWORD:
         value: <@generateRandomString(<32>)>
         sensitive: true
-      GITEA_DOMAIN: web-${zeropsSubdomainHost}-3000.app-prg1.zerops.app
+      GITEA_DOMAIN: web-${zeropsSubdomainHost}-3000.prg1.zerops.app
     maxContainers: 1
     verticalAutoscaling:
       minRam: 0.25
